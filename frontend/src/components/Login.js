@@ -1,11 +1,14 @@
 import { useState } from "react";
-import "./components/Login.css"; // optional, create this file for styling
+import { useNavigate } from "react-router-dom";
+import "./Login.css";
 
-function Login({ onLogin, switchToSignUp }) {
+function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin"); // default role
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +24,18 @@ function Login({ onLogin, switchToSignUp }) {
 
       if (response.ok) {
         alert("Login successful!");
-        onLogin(data); // pass user info to parent component
+        onLogin(data);
+
+        // redirect based on role
+        if (data.role === "admin") {
+          navigate("/admin");
+        } else if (data.role === "police") {
+          navigate("/police");
+        } else if (data.role === "court") {
+          navigate("/court");
+        } else {
+          navigate("/");
+        }
       } else {
         alert(data.detail || "Login failed");
       }
@@ -61,8 +75,8 @@ function Login({ onLogin, switchToSignUp }) {
         </button>
       </form>
       <p>
-        Don't have an account?{" "}
-        <button className="switch-btn" onClick={switchToSignUp}>
+        Don’t have an account?{" "}
+        <button className="switch-btn" onClick={() => navigate("/signup")}>
           Sign Up
         </button>
       </p>

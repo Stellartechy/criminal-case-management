@@ -1,123 +1,76 @@
-import React, { useState } from "react";
-import axios from "axios";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "./SignUp.css";
 
-function SignUp({ onBackToLogin }) {
+function SignUp() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin");
-  const [message, setMessage] = useState("");
+  const [role, setRole] = useState("admin"); // default role
+  const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
-
-    if (!username || !password) {
-      setMessage("Please fill all fields.");
-      return;
-    }
-
+    setLoading(true);
     try {
-      const response = await axios.post("http://127.0.0.1:8000/users", {
-        username,
-        password,
-        role,
+      const response = await fetch("http://localhost:8000/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password, role }),
       });
 
-      if (response.data) {
-        setMessage("Sign up successful! You can now login.");
-        setUsername("");
-        setPassword("");
-        setRole("admin");
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Signup successful! Please login.");
+        navigate("/"); // redirect to login page
+      } else {
+        alert(data.detail || "Signup failed");
       }
-    } catch (error) {
-      console.error(error);
-      setMessage("Error signing up. Username may already exist.");
+    } catch (err) {
+      console.error(err);
+      alert("Error connecting to server");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.heading}>Sign Up</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
+    <div className="signup-container">
+      <h2>Sign Up</h2>
+      <form onSubmit={handleSubmit} className="signup-form">
         <input
-          style={styles.input}
           type="text"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          required
         />
         <input
-          style={styles.input}
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
-        <select
-          style={styles.input}
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
+        <select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="admin">Admin</option>
           <option value="police">Police Officer</option>
           <option value="court">Court Official</option>
         </select>
-        <button style={styles.button} type="submit">
-          Sign Up
+        <button type="submit" disabled={loading}>
+          {loading ? "Signing up..." : "Sign Up"}
         </button>
-        <button
-          style={{ ...styles.button, backgroundColor: "#888" }}
-          type="button"
-          onClick={onBackToLogin}
-        >
-          Back to Login
-        </button>
-        {message && <p style={styles.message}>{message}</p>}
       </form>
+      <p>
+        Already have an account?{" "}
+        <button className="switch-btn" onClick={() => navigate("/")}>
+          Login
+        </button>
+      </p>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    width: "350px",
-    margin: "100px auto",
-    padding: "30px",
-    border: "1px solid #ddd",
-    borderRadius: "10px",
-    boxShadow: "0px 0px 15px rgba(0,0,0,0.2)",
-    backgroundColor: "#f7f7f7",
-    textAlign: "center",
-  },
-  heading: {
-    marginBottom: "20px",
-    color: "#333",
-  },
-  form: {
-    display: "flex",
-    flexDirection: "column",
-  },
-  input: {
-    padding: "10px",
-    margin: "10px 0",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-    fontSize: "16px",
-  },
-  button: {
-    padding: "10px",
-    margin: "10px 0",
-    borderRadius: "5px",
-    border: "none",
-    backgroundColor: "#007bff",
-    color: "#fff",
-    fontSize: "16px",
-    cursor: "pointer",
-  },
-  message: {
-    marginTop: "10px",
-    color: "red",
-  },
-};
 
 export default SignUp;

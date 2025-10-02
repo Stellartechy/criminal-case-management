@@ -1,71 +1,62 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import date
 
-# ------------------ Users ------------------
+# ---------------- Users ----------------
 class UserBase(BaseModel):
     username: str
-    password: str
     role: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserLogin(UserBase):
+    password: str
 
 class UserRead(UserBase):
     user_id: int
+
     class Config:
-        orm_mode = True
+        from_attributes = True  # replaces orm_mode in Pydantic v2
 
-# ------------------ PoliceOfficer ------------------
-class PoliceOfficerBase(BaseModel):
-    name: str
-    rank_title: Optional[str] = None
-    station: Optional[str] = None
-
-class PoliceOfficerRead(PoliceOfficerBase):
-    officer_id: int
-    class Config:
-        orm_mode = True
-
-# ------------------ Criminal ------------------
+# ---------------- Criminals ----------------
 class CriminalBase(BaseModel):
     name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    address: Optional[str] = None
-    status: Optional[str] = None
+    age: int
+    crime: str
 
 class CriminalCreate(CriminalBase):
     pass
 
 class CriminalRead(CriminalBase):
-    criminal_id: int
-    class Config:
-        orm_mode = True
+    id: int
 
-# ------------------ Case ------------------
+    class Config:
+        from_attributes = True
+
+# ---------------- Cases ----------------
 class CaseBase(BaseModel):
-    criminal_id: int
-    officer_id: Optional[int] = None
-    case_status: Optional[str] = None
-    case_date: Optional[date] = None
+    title: str
+    description: str
+    court_id: int
 
 class CaseCreate(CaseBase):
     pass
 
 class CaseRead(CaseBase):
-    case_id: int
-    class Config:
-        orm_mode = True
+    id: int
 
-# ------------------ Court ------------------
+    class Config:
+        from_attributes = True
+
+# ---------------- Court ----------------
 class CourtBase(BaseModel):
-    case_id: int
-    hearing_date: Optional[date] = None
-    verdict: Optional[str] = None
+    name: str
+    location: str
 
 class CourtCreate(CourtBase):
     pass
 
 class CourtRead(CourtBase):
-    court_id: int
-    class Config:
-        orm_mode = True
+    id: int
 
+    class Config:
+        from_attributes = True
