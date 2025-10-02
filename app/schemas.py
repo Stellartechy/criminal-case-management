@@ -1,4 +1,6 @@
 from pydantic import BaseModel
+from typing import Optional, List
+import datetime
 
 # ---------------- Users ----------------
 class UserBase(BaseModel):
@@ -8,55 +10,78 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-class UserLogin(UserBase):
+class UserLogin(BaseModel):
+    username: str
     password: str
+    role: str
 
 class UserRead(UserBase):
     user_id: int
-
     class Config:
-        from_attributes = True  # replaces orm_mode in Pydantic v2
+        orm_mode = True
 
-# ---------------- Criminals ----------------
+# ---------------- Police Officer ----------------
+class PoliceOfficerBase(BaseModel):
+    name: str
+    rank_title: Optional[str] = None
+    station: Optional[str] = None
+
+class PoliceOfficerCreate(PoliceOfficerBase):
+    pass
+
+class PoliceOfficerRead(PoliceOfficerBase):
+    officer_id: int
+    class Config:
+        orm_mode = True
+
+# ---------------- Criminal ----------------
 class CriminalBase(BaseModel):
     name: str
-    age: int
-    crime: str
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    address: Optional[str] = None
+    status: Optional[str] = "Under Trial"
 
 class CriminalCreate(CriminalBase):
     pass
 
 class CriminalRead(CriminalBase):
-    id: int
-
+    criminal_id: int
     class Config:
-        from_attributes = True
+        orm_mode = True
 
-# ---------------- Cases ----------------
+# ---------------- Case ----------------
+# ---------------- Case ----------------
 class CaseBase(BaseModel):
-    title: str
-    description: str
-    court_id: int
+    criminal_id: Optional[int] = None  # Make optional
+    new_criminal_name: Optional[str] = None  # NEW: for creating new criminal
+    officer_id: Optional[int] = None
+    case_status: Optional[str] = "Open"
+    case_date: Optional[datetime.date] = None
 
 class CaseCreate(CaseBase):
     pass
 
 class CaseRead(CaseBase):
-    id: int
+    case_id: int
+    criminal: Optional[CriminalRead] = None
+    officer: Optional[PoliceOfficerRead] = None
 
     class Config:
-        from_attributes = True
+        orm_mode = True
+
+
 
 # ---------------- Court ----------------
 class CourtBase(BaseModel):
-    name: str
-    location: str
+    case_id: int
+    hearing_date: Optional[datetime.date] = None
+    verdict: Optional[str] = "Pending"
 
 class CourtCreate(CourtBase):
     pass
 
 class CourtRead(CourtBase):
-    id: int
-
+    court_id: int
     class Config:
-        from_attributes = True
+        orm_mode = True

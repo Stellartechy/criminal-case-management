@@ -24,7 +24,7 @@ function SignUp() {
 
       if (response.ok) {
         alert("Signup successful! Please login.");
-        navigate("/"); // redirect to login page
+        navigate("/"); // Redirect to login page
       } else {
         alert(data.detail || "Signup failed");
       }
@@ -38,7 +38,7 @@ function SignUp() {
 
   return (
     <div className="signup-container">
-      <h2>Sign Up</h2>
+      <h2>Create an Account</h2>
       <form onSubmit={handleSubmit} className="signup-form">
         <input
           type="text"
@@ -65,7 +65,11 @@ function SignUp() {
       </form>
       <p>
         Already have an account?{" "}
-        <button className="switch-btn" onClick={() => navigate("/")}>
+        <button
+          type="button"
+          className="switch-btn"
+          onClick={() => navigate("/")}
+        >
           Login
         </button>
       </p>

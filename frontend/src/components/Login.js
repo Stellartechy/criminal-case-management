@@ -24,17 +24,21 @@ function Login({ onLogin }) {
 
       if (response.ok) {
         alert("Login successful!");
-        onLogin(data);
+        onLogin(data); // Pass user data to parent
 
-        // redirect based on role
-        if (data.role === "admin") {
-          navigate("/admin");
-        } else if (data.role === "police") {
-          navigate("/police");
-        } else if (data.role === "court") {
-          navigate("/court");
-        } else {
-          navigate("/");
+        // Redirect based on role
+        switch (data.role) {
+          case "admin":
+            navigate("/admin");
+            break;
+          case "police":
+            navigate("/police");
+            break;
+          case "court":
+            navigate("/court");
+            break;
+          default:
+            navigate("/");
         }
       } else {
         alert(data.detail || "Login failed");
@@ -76,7 +80,11 @@ function Login({ onLogin }) {
       </form>
       <p>
         Don’t have an account?{" "}
-        <button className="switch-btn" onClick={() => navigate("/signup")}>
+        <button
+          type="button"
+          className="switch-btn"
+          onClick={() => navigate("/signup")}
+        >
           Sign Up
         </button>
       </p>
