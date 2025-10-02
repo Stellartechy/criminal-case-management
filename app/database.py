@@ -11,9 +11,9 @@ DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
 DB_NAME = os.getenv("DB_NAME")
 
-DATABASE_URL = "mysql+pymysql://root:Salih%402003@localhost:3306/criminal_management"
+DATABASE_URL = f"mysql+pymysql://root:sedona@localhost:3306/criminal_management"
 
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 

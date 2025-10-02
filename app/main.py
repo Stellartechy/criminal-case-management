@@ -1,119 +1,60 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-import datetime
-import os
+from fastapi.responses import HTMLResponse
 
-# ----------------- CONFIG -----------------
-DB_USER = "root"
-DB_PASSWORD = "Salih%402003"
-DB_HOST = "localhost"
-DB_PORT = "3306"
-DB_NAME = "criminal_management"
+from app import models, schemas, crud
+from app.database import engine, Base, get_db
+from app.router import cases, court, criminals
 
-DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-
-# ----------------- DATABASE SETUP -----------------
-engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(bind=engine)
-Base = declarative_base()
-
-# ----------------- MODELS -----------------
-class Criminal(Base):
-    __tablename__ = "criminals"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255))
-    age = Column(Integer)
-    gender = Column(String(50))
-    address = Column(String(255))
-    crimes = relationship("Case", back_populates="criminal")
-
-
-class Case(Base):
-    __tablename__ = "cases"
-    id = Column(Integer, primary_key=True, index=True)
-    case_title = Column(String(255))
-    description = Column(String(500))
-    date_reported = Column(DateTime, default=datetime.datetime.utcnow)
-    status = Column(String(50), default="Registered")
-    criminal_id = Column(Integer, ForeignKey("criminals.id"))
-
-    criminal = relationship("Criminal", back_populates="crimes")
-
-
+# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# ----------------- APP SETUP -----------------
-app = FastAPI()
+# FastAPI app
+app = FastAPI(title="Criminal Case Management")
 
-# ----------------- CORS SETUP -----------------
+# CORS setup (important for React frontend)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # frontend address
+    allow_origins=["*"],  # For dev, allow all. In production, restrict to ["http://localhost:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ----------------- ROUTES -----------------
-@app.get("/")
+# ------------------ ROOT ------------------
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {"message": "Criminal Case Management API is running"}
+    return """
+    <html>
+        <head>
+            <title>Backend Running</title>
+        </head>
+        <body>
+            <h1>Criminal Case Management Backend is running!</h1>
+            <p>Visit /docs for API documentation.</p>
+        </body>
+    </html>
+    """
 
+# ------------------ ROUTERS ------------------
+app.include_router(cases.router, prefix="/cases")
+app.include_router(court.router, prefix="/court")
+app.include_router(criminals.router, prefix="/criminals")
 
-@app.get("/cases")
-def get_cases():
-    db = SessionLocal()
-    try:
-        cases = db.query(Case).all()
-        return cases
-    finally:
-        db.close()
+# ------------------ LOGIN ENDPOINT ------------------
+@app.post("/login")
+def login(user: schemas.UserBase, db: Session = Depends(get_db)):
+    db_user = crud.authenticate_user(db, user.username, user.password)
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    return {"message": "Login successful", "role": db_user.role, "user_id": db_user.user_id}
 
+# ------------------ USERS ENDPOINTS ------------------
+@app.get("/users", response_model=list[schemas.UserRead])
+def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_users(db, skip=skip, limit=limit)
 
-@app.post("/cases")
-def create_case(case: dict):
-    db = SessionLocal()
-    try:
-        new_case = Case(
-            case_title=case.get("case_title"),
-            description=case.get("description"),
-            status=case.get("status", "Registered"),
-            criminal_id=case.get("criminal_id")
-        )
-        db.add(new_case)
-        db.commit()
-        db.refresh(new_case)
-        return new_case
-    finally:
-        db.close()
-
-
-@app.get("/criminals")
-def get_criminals():
-    db = SessionLocal()
-    try:
-        criminals = db.query(Criminal).all()
-        return criminals
-    finally:
-        db.close()
-
-
-@app.post("/criminals")
-def create_criminal(criminal: dict):
-    db = SessionLocal()
-    try:
-        new_criminal = Criminal(
-            name=criminal.get("name"),
-            age=criminal.get("age"),
-            gender=criminal.get("gender"),
-            address=criminal.get("address"),
-        )
-        db.add(new_criminal)
-        db.commit()
-        db.refresh(new_criminal)
-        return new_criminal
-    finally:
-        db.close()
+@app.post("/users", response_model=schemas.UserRead)
+def create_user(user: schemas.UserBase, db: Session = Depends(get_db)):
+    return crud.create_user(db, user)

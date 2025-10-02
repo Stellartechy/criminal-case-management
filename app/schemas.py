@@ -1,8 +1,8 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from datetime import date
 
-# Users
+# ------------------ Users ------------------
 class UserBase(BaseModel):
     username: str
     password: str
@@ -13,7 +13,7 @@ class UserRead(UserBase):
     class Config:
         orm_mode = True
 
-# PoliceOfficer
+# ------------------ PoliceOfficer ------------------
 class PoliceOfficerBase(BaseModel):
     name: str
     rank_title: Optional[str] = None
@@ -24,7 +24,7 @@ class PoliceOfficerRead(PoliceOfficerBase):
     class Config:
         orm_mode = True
 
-# Criminal
+# ------------------ Criminal ------------------
 class CriminalBase(BaseModel):
     name: str
     age: Optional[int] = None
@@ -40,7 +40,7 @@ class CriminalRead(CriminalBase):
     class Config:
         orm_mode = True
 
-# Cases
+# ------------------ Case ------------------
 class CaseBase(BaseModel):
     criminal_id: int
     officer_id: Optional[int] = None
@@ -55,7 +55,7 @@ class CaseRead(CaseBase):
     class Config:
         orm_mode = True
 
-# Court
+# ------------------ Court ------------------
 class CourtBase(BaseModel):
     case_id: int
     hearing_date: Optional[date] = None
@@ -68,3 +68,4 @@ class CourtRead(CourtBase):
     court_id: int
     class Config:
         orm_mode = True
+
