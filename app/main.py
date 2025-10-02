@@ -1,56 +1,58 @@
+# criminal-case-management/app/main.py
+
 from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from fastapi.responses import HTMLResponse
 
 from app import models, schemas, crud
 from app.database import engine, Base, get_db
-from app.router import cases, court, criminals
-
-# Create database tables
+from app.routers import cases, court, criminals  # absolute imports
+from app.crud import verify_password, get_user_by_username
+# ------------------ Database ------------------
+# Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
-# FastAPI app
+# ------------------ FastAPI app ------------------
 app = FastAPI(title="Criminal Case Management")
 
-# CORS setup (important for React frontend)
+# ------------------ CORS Middleware ------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For dev, allow all. In production, restrict to ["http://localhost:3000"]
+    allow_origins=["*"],  # For development, allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ------------------ ROOT ------------------
+# ------------------ Include Routers ------------------
+app.include_router(cases.router, prefix="/cases", tags=["cases"])
+app.include_router(court.router, prefix="/court", tags=["court"])
+app.include_router(criminals.router, prefix="/criminals", tags=["criminals"])
+
+# ------------------ Root endpoint ------------------
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """
     <html>
         <head>
-            <title>Backend Running</title>
+            <title>Criminal Case Management</title>
         </head>
         <body>
-            <h1>Criminal Case Management Backend is running!</h1>
-            <p>Visit /docs for API documentation.</p>
+            <h1>Criminal Case Management Backend Running!</h1>
+            <p>Visit <a href='/docs'>/docs</a> for Swagger UI.</p>
         </body>
     </html>
     """
 
-# ------------------ ROUTERS ------------------
-app.include_router(cases.router, prefix="/cases")
-app.include_router(court.router, prefix="/court")
-app.include_router(criminals.router, prefix="/criminals")
-
-# ------------------ LOGIN ENDPOINT ------------------
+# ------------------ LOGIN ------------------
 @app.post("/login")
 def login(user: schemas.UserBase, db: Session = Depends(get_db)):
-    db_user = crud.authenticate_user(db, user.username, user.password)
-    if not db_user:
+    db_user = crud.get_user_by_username(db, user.username)
+    if not db_user or not crud.verify_password(user.password, db_user.password):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     return {"message": "Login successful", "role": db_user.role, "user_id": db_user.user_id}
-
-# ------------------ USERS ENDPOINTS ------------------
+# ------------------ USERS ------------------
 @app.get("/users", response_model=list[schemas.UserRead])
 def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_users(db, skip=skip, limit=limit)

@@ -1,35 +1,60 @@
 import React, { useState } from "react";
 import Login from "./components/Login";
+import SignUp from "./components/SignUp";
+
+// Import your dashboards
 import AdminDashboard from "./components/AdminDashboard";
 import PoliceDashboard from "./components/PoliceDashboard";
 import CourtDashboard from "./components/CourtDashboard";
 
 function App() {
-  const [role, setRole] = useState(null);
+  const [showSignUp, setShowSignUp] = useState(false); // toggle login/signup
+  const [user, setUser] = useState(null); // store logged-in user
 
-  // This function gets called after successful login
-  const handleLogin = (userRole) => {
-    setRole(userRole);
+  const handleSignUpClick = () => {
+    setShowSignUp(true);
   };
 
-  // If not logged in, show login page
-  if (!role) {
-    return <Login onLogin={handleLogin} />;
+  const handleLoginClick = () => {
+    setShowSignUp(false);
+  };
+
+  const handleLoginSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  // Render dashboards based on role
+  if (user) {
+    switch (user.role) {
+      case "admin":
+        return <AdminDashboard user={user} />;
+      case "police":
+        return <PoliceDashboard user={user} />;
+      case "court":
+        return <CourtDashboard user={user} />;
+      default:
+        return (
+          <div style={{ textAlign: "center", marginTop: "100px" }}>
+            <h1>Welcome, {user.username}!</h1>
+            <p>Your role: {user.role}</p>
+          </div>
+        );
+    }
   }
 
-  // Role-based navigation
-  if (role === "admin") {
-    return <AdminDashboard />;
-  }
-  if (role === "police") {
-    return <PoliceDashboard />;
-  }
-  if (role === "court") {
-    return <CourtDashboard />;
-  }
-
-  // Fallback if role is unknown
-  return <h1>Unknown Role</h1>;
+  // Render Login or SignUp page
+  return (
+    <div>
+      {showSignUp ? (
+        <SignUp onLoginClick={handleLoginClick} />
+      ) : (
+        <Login
+          onSignUpClick={handleSignUpClick}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      )}
+    </div>
+  );
 }
 
 export default App;

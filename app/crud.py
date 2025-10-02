@@ -8,8 +8,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 def get_password_hash(password: str):
     return pwd_context.hash(password)
 
-def verify_password(plain_password: str, hashed_password: str):
+def verify_password(plain_password, hashed_password):
+    from passlib.context import CryptContext
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     return pwd_context.verify(plain_password, hashed_password)
+
 
 # ------------------ Authenticate User ------------------
 def authenticate_user(db: Session, username: str, password: str):
@@ -56,7 +59,8 @@ def create_court(db: Session, court: schemas.CourtCreate):
 # ------------------ Users ------------------
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(models.User).offset(skip).limit(limit).all()
-
+def get_user_by_username(db: Session, username: str):
+    return db.query(models.User).filter(models.User.username == username).first()
 def create_user(db: Session, user: schemas.UserBase):
     hashed_password = get_password_hash(user.password)
     db_obj = models.User(
