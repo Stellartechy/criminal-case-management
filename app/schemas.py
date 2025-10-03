@@ -1,13 +1,15 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional, List
 from datetime import date
 
-# ---------------- Users ----------------
-class UserCreate(BaseModel):
+# ---------------- USERS ----------------
+class UserBase(BaseModel):
     username: str
-    password: str
     role: str
-    # Officer info (only for police)
+
+class UserCreate(UserBase):
+    password: str
+    # officer fields for signup (only if role == police)
     name: Optional[str] = None
     rank_title: Optional[str] = None
     station: Optional[str] = None
@@ -17,64 +19,97 @@ class UserLogin(BaseModel):
     password: str
     role: str
 
-class UserRead(BaseModel):
+class UserRead(UserBase):
     user_id: int
-    username: str
-    role: str
+
     class Config:
         orm_mode = True
 
-# ---------------- Officers ----------------
+# ---------------- OFFICERS ----------------
 class OfficerRead(BaseModel):
     officer_id: int
     user_id: int
     name: str
-    rank_title: str
-    station: str
+    rank_title: Optional[str]
+    station: Optional[str]
+
     class Config:
         orm_mode = True
 
-# ---------------- Criminals ----------------
+# ---------------- CRIMINALS ----------------
 class CriminalBase(BaseModel):
     name: str
-    age: Optional[int]
-    gender: Optional[str]
-    address: Optional[str]
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    address: Optional[str] = None
     status: Optional[str] = "Under Trial"
 
 class CriminalCreate(CriminalBase):
     pass
 
-class CriminalUpdate(CriminalBase):
-    pass
+class CriminalUpdate(BaseModel):
+    name: Optional[str]
+    age: Optional[int]
+    gender: Optional[str]
+    address: Optional[str]
+    status: Optional[str]
 
-class CriminalRead(CriminalBase):
-    criminal_id: int
+# Show crimes associated with a criminal
+class CriminalFIRInfo(BaseModel):
+    fir_id: int
+    crime_type: str
+    case_status: str
+
     class Config:
         orm_mode = True
 
-# ---------------- FIR / Cases ----------------
+class CriminalRead(CriminalBase):
+    criminal_id: int
+    firs: List[CriminalFIRInfo] = []  # shows crimes for this criminal
+
+    class Config:
+        orm_mode = True
+
+# ---------------- FIR / CASES ----------------
 class FIRBase(BaseModel):
-    case_status: Optional[str]
-    crime_type: Optional[str]
-    crime_date: Optional[date]
-    crime_description: Optional[str]
-    verdict: Optional[str]
-    punishment_type: Optional[str]
-    punishment_duration_years: Optional[int]
-    punishment_start_date: Optional[date]
+    case_status: Optional[str] = "Open"
+    crime_type: str
+    crime_date: date
+    crime_description: str
+    verdict: Optional[str] = "Pending"
+    punishment_type: Optional[str] = None
+    punishment_duration_years: Optional[int] = None
+    punishment_start_date: Optional[date] = None
 
 class FIRCreate(FIRBase):
-    criminal_ids: List[int]
+    criminal_ids: List[int] = []   # allow linking criminals on creation
 
 class FIRUpdate(FIRBase):
-    pass
+    criminal_ids: Optional[List[int]] = None  # can update linked criminals
+
+# Show criminal info inside FIR
+class FIRCriminalInfo(BaseModel):
+    criminal_id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
+# Show officer inside FIR
+class FIROfficerInfo(BaseModel):
+    officer_id: int
+    name: str
+    rank_title: Optional[str]
+    station: Optional[str]
+
+    class Config:
+        orm_mode = True
 
 class FIRRead(FIRBase):
     fir_id: int
-    officer_id: Optional[int]
-    officer_name: Optional[str]
-    fir_date: Optional[date]
-    criminals: List[CriminalRead] = []
+    fir_date: date
+    officer: Optional[FIROfficerInfo]
+    criminals: List[FIRCriminalInfo] = []  # show criminals linked
+
     class Config:
         orm_mode = True

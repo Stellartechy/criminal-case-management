@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Date, Text, Table
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Date, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -8,7 +8,7 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    role = Column(Enum("admin", "police"), nullable=False)
+    role = Column(Enum("admin", "police", name="user_roles", native_enum=False), nullable=False)
     officer = relationship("PoliceOfficer", back_populates="user", uselist=False)
 
 # ---------------- Police Officers ----------------
@@ -28,9 +28,9 @@ class Criminal(Base):
     criminal_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     age = Column(Integer)
-    gender = Column(Enum("Male", "Female", "Other"))
+    gender = Column(Enum("Male", "Female", "Other", name="gender_enum", native_enum=False))
     address = Column(String(255))
-    status = Column(Enum("Under Trial","Released","Convicted"), default="Under Trial")
+    status = Column(Enum("Under Trial", "Released", "Convicted", name="status_enum", native_enum=False), default="Under Trial")
     firs = relationship("FIR", secondary="fir_criminal", back_populates="criminals")
 
 # ---------------- FIR / Cases ----------------
@@ -39,11 +39,11 @@ class FIR(Base):
     fir_id = Column(Integer, primary_key=True, index=True)
     officer_id = Column(Integer, ForeignKey("police_officer.officer_id"))
     fir_date = Column(Date)
-    case_status = Column(Enum("Open","In Court","Closed"), default="Open")
+    case_status = Column(Enum("Open","In Court","Closed", name="case_status_enum", native_enum=False), default="Open")
     crime_type = Column(String(100))
     crime_date = Column(Date)
     crime_description = Column(Text)
-    verdict = Column(Enum("Pending","Guilty","Not Guilty"), default="Pending")
+    verdict = Column(Enum("Pending","Guilty","Not Guilty", name="verdict_enum", native_enum=False), default="Pending")
     punishment_type = Column(String(100))
     punishment_duration_years = Column(Integer)
     punishment_start_date = Column(Date)

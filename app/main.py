@@ -92,11 +92,28 @@ def get_case(fir_id: int, db: Session = Depends(get_db)):
 
 @app.post("/cases", response_model=schemas.FIRRead)
 def create_case(case: schemas.FIRCreate, db: Session = Depends(get_db), officer_id: int = 1):
-    # officer_id comes from login in frontend
+    """
+    Create a new FIR/case. 
+    officer_id should be passed from the frontend after login.
+    """
+    # 1️⃣ Validate officer exists
+    officer = crud.get_officer_by_id(db, officer_id)
+    if not officer:
+        raise HTTPException(status_code=404, detail="Officer not found")
+    
+    # 2️⃣ Validate criminals exist
+    for crim_id in case.criminal_ids:
+        crim = crud.get_criminal(db, crim_id)
+        if not crim:
+            raise HTTPException(status_code=404, detail=f"Criminal {crim_id} not found")
+    
     return crud.create_case(db, case, officer_id)
 
 @app.put("/cases/{fir_id}", response_model=schemas.FIRRead)
 def update_case(fir_id: int, case: schemas.FIRUpdate, db: Session = Depends(get_db)):
+    db_case = crud.get_case(db, fir_id)
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
     return crud.update_case(db, fir_id, case)
 
 # ---------------- NOTE ----------------
