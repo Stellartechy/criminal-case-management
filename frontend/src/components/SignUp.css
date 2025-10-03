@@ -1,71 +1,70 @@
+/* signup.css */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(to right, #00a8ff, #9c88ff);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0;
+}
+
 .signup-container {
-  width: 350px;
-  margin: 80px auto;
-  padding: 25px;
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  padding: 40px 30px;
+  border-radius: 10px;
+  box-shadow: 0px 10px 30px rgba(0,0,0,0.2);
+  width: 400px;
   text-align: center;
-  font-family: Arial, sans-serif;
 }
 
 .signup-container h2 {
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 24px;
-}
-
-.signup-form {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 30px;
+  color: #2f3640;
 }
 
 .signup-form input,
 .signup-form select {
+  width: 100%;
+  padding: 12px 15px;
   margin: 10px 0;
-  padding: 12px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  outline: none;
-  transition: 0.3s;
-}
-
-.signup-form input:focus,
-.signup-form select:focus {
-  border-color: #4caf50;
-  box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+  border-radius: 5px;
+  border: 1px solid #dcdde1;
+  font-size: 1rem;
 }
 
 .signup-form button {
-  margin-top: 15px;
+  width: 100%;
   padding: 12px;
-  font-size: 16px;
+  margin-top: 15px;
+  background-color: #00a8ff;
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
+  font-size: 1rem;
   cursor: pointer;
-  background: #4caf50;
-  color: white;
-  transition: background 0.3s ease;
+  transition: 0.3s;
 }
 
 .signup-form button:hover {
-  background: #45a049;
+  background-color: #0097e6;
 }
 
 .switch-btn {
-  margin-top: 10px;
-  padding: 8px 14px;
-  font-size: 14px;
-  background: transparent;
-  border: 1px solid #4caf50;
-  color: #4caf50;
-  border-radius: 8px;
+  background: none;
+  color: #00a8ff;
+  border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
+  font-weight: bold;
+  margin-left: 5px;
 }
 
 .switch-btn:hover {
-  background: #4caf50;
-  color: white;
+  text-decoration: underline;
+}
+
+p {
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: #2f3640;
 }

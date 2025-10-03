@@ -1,18 +1,26 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
-from passlib.context import CryptContext
-from typing import List, Optional
+from typing import List
 from app import models, crud, schemas
-from app.database import engine, Base, get_db
+from app.database import engine, Base, SessionLocal
 
-# ------------------ Create Database Tables ------------------
+# ---------------- Create tables ----------------
 Base.metadata.create_all(bind=engine)
 
-# ------------------ FastAPI App ------------------
+# ---------------- FastAPI ----------------
 app = FastAPI(title="Criminal Case Management")
 
-# ------------------ CORS ------------------
+
+# ---------------- DB Dependency ----------------
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,16 +29,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ------------------ Password Hashing ------------------
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def get_password_hash(password: str):
-    return pwd_context.hash(password[:72])
-
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password[:72], hashed_password)
-
-# ------------------ Signup Endpoint ------------------
+# ---------------- Signup/Login ----------------
 @app.post("/signup", response_model=schemas.UserRead)
 def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     existing_user = crud.get_user_by_username(db, user.username)
@@ -38,75 +37,70 @@ def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username already exists")
     return crud.create_user(db, user)
 
-# ------------------ Login Endpoint ------------------
-@app.post("/login")
+@app.post("/login", response_model=schemas.UserRead)
 def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     db_user = crud.authenticate_user(db, user.username, user.password)
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
     if db_user.role != user.role:
         raise HTTPException(status_code=403, detail=f"You are not a {user.role}")
-    return {"message": "Login successful", "role": db_user.role, "user_id": db_user.user_id}
+    return db_user
 
-# ------------------ Users Endpoint ------------------
-@app.get("/users", response_model=List[schemas.UserRead])
-def read_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_users(db, skip=skip, limit=limit)
-
-# ------------------ Criminals Endpoints ------------------
+# ---------------- Criminals ----------------
 @app.get("/criminals", response_model=List[schemas.CriminalRead])
-def read_criminals(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_criminals(db, skip=skip, limit=limit)
+def get_criminals(db: Session = Depends(get_db)):
+    return crud.get_criminals(db)
+
+@app.get("/criminals/{criminal_id}", response_model=schemas.CriminalRead)
+def get_criminal_by_id(criminal_id: int, db: Session = Depends(get_db)):
+    db_criminal = crud.get_criminal(db, criminal_id)
+    if not db_criminal:
+        raise HTTPException(status_code=404, detail="Criminal not found")
+    return db_criminal
 
 @app.post("/criminals", response_model=schemas.CriminalRead)
-def create_criminal(criminal: schemas.CriminalCreate, db: Session = Depends(get_db)):
+def add_criminal(criminal: schemas.CriminalCreate, db: Session = Depends(get_db)):
     return crud.create_criminal(db, criminal)
 
-@app.get("/police/criminals", response_model=List[schemas.CriminalRead])
-def get_criminals_police(
-    station: Optional[str] = None,
-    crime: Optional[str] = None,
-    age: Optional[int] = None,
-    db: Session = Depends(get_db)
-):
-    return crud.get_criminals_filtered(db, station=station, crime=crime, age=age)
+@app.put("/criminals/{criminal_id}", response_model=schemas.CriminalRead)
+def update_criminal(criminal_id: int, criminal: schemas.CriminalUpdate, db: Session = Depends(get_db)):
+    return crud.update_criminal(db, criminal_id, criminal)
 
-# ------------------ Cases Endpoints ------------------
-@app.get("/cases", response_model=List[schemas.CaseRead])
-def read_cases(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_cases(db, skip=skip, limit=limit)
+@app.delete("/criminals/{criminal_id}")
+def delete_criminal(criminal_id: int, db: Session = Depends(get_db)):
+    crud.delete_criminal(db, criminal_id)
+    return {"message": "Criminal deleted successfully"}
 
-@app.get("/police/cases", response_model=List[schemas.CaseRead])
-def get_cases_police(officer_id: Optional[int] = None, db: Session = Depends(get_db)):
-    cases = crud.get_cases_police(db)
-    if officer_id:
-        cases = [c for c in cases if c.get("officer_id") == officer_id]
-    return cases
+# ---------------- Cases / FIRs ----------------
+@app.get("/cases", response_model=List[schemas.FIRRead])
+def get_cases(db: Session = Depends(get_db)):
+    return crud.get_cases(db)
 
-@app.post("/cases", response_model=schemas.CaseRead)
-def create_case(case: schemas.CaseCreate, db: Session = Depends(get_db)):
-    # Ensure criminal exists
-    criminal = db.query(models.Criminal).filter(models.Criminal.criminal_id == case.criminal_id).first()
-    if not criminal:
-        raise HTTPException(status_code=404, detail="Criminal not found. Please register criminal first.")
-
-    # If officer_id provided, ensure it exists
-    if case.officer_id:
-        officer = db.query(models.PoliceOfficer).filter(models.PoliceOfficer.officer_id == case.officer_id).first()
-        if not officer:
-            raise HTTPException(status_code=404, detail="Officer not found")
-
-    return crud.create_case(db, case)
-
-# ------------------ Courts Endpoints ------------------
-@app.get("/courts", response_model=List[schemas.CourtRead])
-def read_courts(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return crud.get_courts(db, skip=skip, limit=limit)
-
-@app.post("/courts", response_model=schemas.CourtRead)
-def create_court(court: schemas.CourtCreate, db: Session = Depends(get_db)):
-    # Ensure case exists
-    db_case = db.query(models.Case).filter(models.Case.case_id == court.case_id).first()
+@app.get("/cases/{fir_id}", response_model=schemas.FIRRead)
+def get_case(fir_id: int, db: Session = Depends(get_db)):
+    db_case = crud.get_case(db, fir_id)
     if not db_case:
         raise HTTPException(status_code=404, detail="Case not found")
-    return crud.create_court(db, court)
+    return db_case
+
+@app.post("/cases", response_model=schemas.FIRRead)
+def create_case(case: schemas.FIRCreate, db: Session = Depends(get_db), officer_id: int = 1):
+    # officer_id can come from login in frontend
+    return crud.create_case(db, case, officer_id)
+
+@app.put("/cases/{fir_id}", response_model=schemas.FIRRead)
+def update_case(fir_id: int, case: schemas.FIRUpdate, db: Session = Depends(get_db)):
+    return crud.update_case(db, fir_id, case)
+
+
+
+@app.delete("/cases/{fir_id}")
+def delete_case(fir_id: int, db: Session = Depends(get_db)):
+    db_case = crud.get_case(db, fir_id)
+    if not db_case:
+        raise HTTPException(status_code=404, detail="Case not found")
+    
+    # Delete the case record
+    crud.delete_case(db, fir_id)
+    
+    return {"message": "Case deleted successfully"}

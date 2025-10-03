@@ -1,87 +1,76 @@
 from pydantic import BaseModel
 from typing import Optional, List
-import datetime
+from datetime import date
 
 # ---------------- Users ----------------
-class UserBase(BaseModel):
+class UserCreate(BaseModel):
     username: str
-    role: str
-
-class UserCreate(UserBase):
     password: str
+    role: str
 
 class UserLogin(BaseModel):
     username: str
     password: str
     role: str
 
-class UserRead(UserBase):
+class UserRead(BaseModel):
     user_id: int
+    username: str
+    role: str
     class Config:
         orm_mode = True
 
-# ---------------- Police Officer ----------------
-class PoliceOfficerBase(BaseModel):
-    name: str
-    rank_title: Optional[str] = None
-    station: Optional[str] = None
-
-class PoliceOfficerCreate(PoliceOfficerBase):
-    pass
-
-class PoliceOfficerRead(PoliceOfficerBase):
-    officer_id: int
-    class Config:
-        orm_mode = True
-
-# ---------------- Criminal ----------------
+# ---------------- Criminals ----------------
 class CriminalBase(BaseModel):
     name: str
-    age: Optional[int] = None
-    gender: Optional[str] = None
-    address: Optional[str] = None
+    age: Optional[int]
+    gender: Optional[str]
+    address: Optional[str]
     status: Optional[str] = "Under Trial"
 
 class CriminalCreate(CriminalBase):
     pass
+
+class CriminalUpdate(BaseModel):
+    name: Optional[str]
+    age: Optional[int]
+    gender: Optional[str]
+    address: Optional[str]
+    status: Optional[str]
 
 class CriminalRead(CriminalBase):
     criminal_id: int
     class Config:
         orm_mode = True
 
-# ---------------- Case ----------------
-# ---------------- Case ----------------
-class CaseBase(BaseModel):
-    criminal_id: Optional[int] = None  # Make optional
-    new_criminal_name: Optional[str] = None  # NEW: for creating new criminal
-    officer_id: Optional[int] = None
+# ---------------- FIR / Cases ----------------
+class FIRBase(BaseModel):
     case_status: Optional[str] = "Open"
-    case_date: Optional[datetime.date] = None
+    fir_date: date
+    crime_type: str
+    crime_date: date
+    crime_description: str
 
-class CaseCreate(CaseBase):
-    pass
+class FIRCreate(FIRBase):
+    criminal_ids: List[int]
 
-class CaseRead(CaseBase):
-    case_id: int
-    criminal: Optional[CriminalRead] = None
-    officer: Optional[PoliceOfficerRead] = None
+class FIRUpdate(BaseModel):
+    case_status: Optional[str]
+    crime_type: Optional[str]
+    crime_date: Optional[date]
+    crime_description: Optional[str]
+    verdict: Optional[str]
+    punishment_type: Optional[str]
+    punishment_duration_years: Optional[int]
+    punishment_start_date: Optional[date]
 
-    class Config:
-        orm_mode = True
-
-
-
-# ---------------- Court ----------------
-class CourtBase(BaseModel):
-    case_id: int
-    hearing_date: Optional[datetime.date] = None
-    verdict: Optional[str] = "Pending"
-
-class CourtCreate(CourtBase):
-    pass
-
-class CourtRead(CourtBase):
-    court_id: int
+class FIRRead(FIRBase):
+    fir_id: int
+    officer_id: Optional[int]
+    verdict: Optional[str]
+    punishment_type: Optional[str]
+    punishment_duration_years: Optional[int]
+    punishment_start_date: Optional[date]
+    criminals: List[CriminalRead] = []
     class Config:
         orm_mode = True

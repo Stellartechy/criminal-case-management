@@ -1,87 +1,88 @@
-from sqlalchemy.orm import Session
-from passlib.context import CryptContext
+from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
+from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def get_password_hash(password: str):
-    return pwd_context.hash(password[:72])
-
-def verify_password(plain_password: str, hashed_password: str):
-    return pwd_context.verify(plain_password[:72], hashed_password)
-
 # ---------------- Users ----------------
 def get_user_by_username(db: Session, username: str):
-    return db.query(models.User).filter(models.User.username == username).first()
+    return db.query(models.User).filter(models.User.username==username).first()
+
+def create_user(db: Session, user: schemas.UserCreate):
+    hashed_password = pwd_context.hash(user.password)
+    db_user = models.User(username=user.username, password=hashed_password, role=user.role)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
 
 def authenticate_user(db: Session, username: str, password: str):
     user = get_user_by_username(db, username)
-    if user and verify_password(password, user.password):
-        return user
-    return None
-
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.User).offset(skip).limit(limit).all()
-
-def create_user(db: Session, user: schemas.UserCreate):
-    hashed_password = get_password_hash(user.password)
-    db_obj = models.User(username=user.username, password=hashed_password, role=user.role)
-    db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
-    return db_obj
+    if not user:
+        return None
+    if not pwd_context.verify(password, user.password):
+        return None
+    return user
 
 # ---------------- Criminals ----------------
-def get_criminals(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Criminal).offset(skip).limit(limit).all()
+def get_criminals(db: Session):
+    return db.query(models.Criminal).all()
 
-def get_criminals_filtered(db: Session, station: str = None, crime: str = None, age: int = None):
-    query = db.query(models.Criminal)
-    if age: query = query.filter(models.Criminal.age == age)
-    if crime: query = query.join(models.Crime).filter(models.Crime.crime_type.ilike(f"%{crime}%"))
-    if station: query = query.join(models.Case).join(models.PoliceOfficer).filter(models.PoliceOfficer.station.ilike(f"%{station}%"))
-    return query.distinct().all()
+def get_criminal(db: Session, criminal_id: int):
+    return db.query(models.Criminal).filter(models.Criminal.criminal_id==criminal_id).first()
 
 def create_criminal(db: Session, criminal: schemas.CriminalCreate):
-    db_obj = models.Criminal(**criminal.dict())
-    db.add(db_obj)
+    db_criminal = models.Criminal(**criminal.dict())
+    db.add(db_criminal)
     db.commit()
-    db.refresh(db_obj)
-    return db_obj
+    db.refresh(db_criminal)
+    return db_criminal
 
-# ---------------- Cases ----------------
-def get_cases(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Case).offset(skip).limit(limit).all()
-
-def get_cases_police(db: Session):
-    cases = db.query(models.Case).all()
-    result = []
-    for c in cases:
-        result.append({
-            "case_id": c.case_id,
-            "criminal_id": c.criminal_id,
-            "officer_id": c.officer_id,
-            "case_status": c.case_status,
-            "case_date": c.case_date,
-            "criminal": c.criminal,
-            "officer": c.officer
-        })
-    return result
-
-def create_case(db: Session, case: schemas.CaseCreate):
-    db_obj = models.Case(**case.dict())
-    db.add(db_obj)
+def update_criminal(db: Session, criminal_id: int, criminal: schemas.CriminalUpdate):
+    db_criminal = get_criminal(db, criminal_id)
+    for key, value in criminal.dict(exclude_unset=True).items():
+        setattr(db_criminal, key, value)
     db.commit()
-    db.refresh(db_obj)
-    return db_obj
+    db.refresh(db_criminal)
+    return db_criminal
 
-# ---------------- Courts ----------------
-def get_courts(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Court).offset(skip).limit(limit).all()
-
-def create_court(db: Session, court: schemas.CourtCreate):
-    db_obj = models.Court(**court.dict())
-    db.add(db_obj)
+def delete_criminal(db: Session, criminal_id: int):
+    db_criminal = get_criminal(db, criminal_id)
+    db.delete(db_criminal)
     db.commit()
-    db.refresh(db_obj)
-    return db_obj
+
+# ---------------- FIR / Cases ----------------
+def get_cases(db: Session):
+    return db.query(models.FIR).options(joinedload(models.FIR.criminals)).all()
+
+def get_case(db: Session, fir_id: int):
+    return db.query(models.FIR).options(joinedload(models.FIR.criminals)).filter(models.FIR.fir_id==fir_id).first()
+
+def create_case(db: Session, case: schemas.FIRCreate, officer_id: int):
+    db_case = models.FIR(
+        officer_id=officer_id,
+        fir_date=case.fir_date,
+        case_status=case.case_status,
+        crime_type=case.crime_type,
+        crime_date=case.crime_date,
+        crime_description=case.crime_description
+    )
+    # Link criminals
+    db_case.criminals = db.query(models.Criminal).filter(models.Criminal.criminal_id.in_(case.criminal_ids)).all()
+    db.add(db_case)
+    db.commit()
+    db.refresh(db_case)
+    return db_case
+
+def update_case(db: Session, fir_id: int, case: schemas.FIRUpdate):
+    db_case = get_case(db, fir_id)
+    for key, value in case.dict(exclude_unset=True).items():
+        setattr(db_case, key, value)
+    db.commit()
+    db.refresh(db_case)
+    return db_case
+
+def delete_case(db: Session, fir_id: int):
+    db_case = get_case(db, fir_id)
+    db.delete(db_case)
+    db.commit()

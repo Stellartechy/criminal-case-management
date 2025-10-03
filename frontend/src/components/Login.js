@@ -5,7 +5,7 @@ import "./Login.css";
 function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("admin"); // default role
+  const [role, setRole] = useState("admin");
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -13,33 +13,21 @@ function Login({ onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      const response = await fetch("http://localhost:8000/login", {
+      const res = await fetch("http://localhost:8000/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, role }),
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (response.ok) {
+      if (res.ok) {
         alert("Login successful!");
-        onLogin(data); // Pass user data to parent
+        onLogin({ username, role, user_id: data.user_id });
 
-        // Redirect based on role
-        switch (data.role) {
-          case "admin":
-            navigate("/admin");
-            break;
-          case "police":
-            navigate("/police");
-            break;
-          case "court":
-            navigate("/court");
-            break;
-          default:
-            navigate("/");
-        }
+        navigate(`/${role}`);
       } else {
         alert(data.detail || "Login failed");
       }
@@ -72,7 +60,6 @@ function Login({ onLogin }) {
         <select value={role} onChange={(e) => setRole(e.target.value)}>
           <option value="admin">Admin</option>
           <option value="police">Police Officer</option>
-          <option value="court">Court Official</option>
         </select>
         <button type="submit" disabled={loading}>
           {loading ? "Logging in..." : "Login"}

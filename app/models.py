@@ -1,82 +1,53 @@
-from sqlalchemy import Column, Integer, String, Enum, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, Enum, ForeignKey, Text, Table
 from sqlalchemy.orm import relationship
-from .database import Base
-import datetime
+from app.database import Base
 
-# ---------------- Users ----------------
+# Many-to-many association between FIR and Criminal
+fir_criminal_table = Table(
+    "fir_criminal",
+    Base.metadata,
+    Column("fir_id", Integer, ForeignKey("fir.fir_id", ondelete="CASCADE"), primary_key=True),
+    Column("criminal_id", Integer, ForeignKey("criminal.criminal_id", ondelete="CASCADE"), primary_key=True)
+)
+
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "users"
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False)
-    password = Column(String(128), nullable=False)  # store hashed passwords
-    role = Column(Enum("admin", "police", "court", name="user_roles"), nullable=False)
+    password = Column(String(255), nullable=False)
+    role = Column(Enum("admin", "police", name="user_roles"), nullable=False)
 
-# ---------------- Police Officer ----------------
 class PoliceOfficer(Base):
     __tablename__ = "police_officer"
     officer_id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), unique=True)
     name = Column(String(100), nullable=False)
     rank_title = Column(String(50))
     station = Column(String(100))
 
-    # Relationship with Case
-    cases = relationship("Case", back_populates="officer")
-
-# ---------------- Criminal ----------------
 class Criminal(Base):
     __tablename__ = "criminal"
     criminal_id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     age = Column(Integer)
-    gender = Column(String(10))
+    gender = Column(Enum("Male", "Female", "Other", name="gender_enum"))
     address = Column(String(255))
-    status = Column(Enum("Under Trial", "Released", "Convicted", name="criminal_status"), default="Under Trial")
+    status = Column(Enum("Under Trial", "Released", "Convicted", name="status_enum"), default="Under Trial")
+    
+    firs = relationship("FIR", secondary=fir_criminal_table, back_populates="criminals")
 
-    crimes = relationship("Crime", back_populates="criminal")
-    cases = relationship("Case", back_populates="criminal")
-
-# ---------------- Crime ----------------
-class Crime(Base):
-    __tablename__ = "crime"
-    crime_id = Column(Integer, primary_key=True, index=True)
-    criminal_id = Column(Integer, ForeignKey("criminal.criminal_id"), nullable=False)
+class FIR(Base):
+    __tablename__ = "fir"
+    fir_id = Column(Integer, primary_key=True, index=True)
+    officer_id = Column(Integer, ForeignKey("police_officer.officer_id", ondelete="SET NULL"))
+    fir_date = Column(Date, nullable=False)
+    case_status = Column(Enum("Open", "In Court", "Closed", name="case_status_enum"), default="Open")
     crime_type = Column(String(100))
     crime_date = Column(Date)
-    description = Column(String(255))
-
-    criminal = relationship("Criminal", back_populates="crimes")
-
-# ---------------- Case ----------------
-class Case(Base):
-    __tablename__ = "case"
-    case_id = Column(Integer, primary_key=True, index=True)
-    criminal_id = Column(Integer, ForeignKey("criminal.criminal_id"), nullable=False)
-    officer_id = Column(Integer, ForeignKey("police_officer.officer_id"), nullable=True)
-    case_status = Column(Enum("Open", "In Court", "Closed", name="case_status"), default="Open")
-    case_date = Column(Date, default=datetime.date.today)
-
-    criminal = relationship("Criminal", back_populates="cases")
-    officer = relationship("PoliceOfficer", back_populates="cases")
-    court = relationship("Court", back_populates="case", uselist=False)
-
-# ---------------- Court ----------------
-class Court(Base):
-    __tablename__ = "court"
-    court_id = Column(Integer, primary_key=True, index=True)
-    case_id = Column(Integer, ForeignKey("case.case_id"), nullable=False)
-    hearing_date = Column(Date)
-    verdict = Column(Enum("Guilty", "Not Guilty", "Pending", name="verdict_status"), default="Pending")
-
-    case = relationship("Case", back_populates="court")
-    punishment = relationship("Punishment", back_populates="court", uselist=False)
-
-# ---------------- Punishment ----------------
-class Punishment(Base):
-    __tablename__ = "punishment"
-    punishment_id = Column(Integer, primary_key=True, index=True)
-    court_id = Column(Integer, ForeignKey("court.court_id"), nullable=False)
+    crime_description = Column(Text)
+    verdict = Column(Enum("Pending", "Guilty", "Not Guilty", name="verdict_enum"), default="Pending")
     punishment_type = Column(String(100))
-    duration = Column(String(50))
-    start_date = Column(Date)
-
-    court = relationship("Court", back_populates="punishment")
+    punishment_duration_years = Column(Integer)
+    punishment_start_date = Column(Date)
+    
+    criminals = relationship("Criminal", secondary=fir_criminal_table, back_populates="firs")

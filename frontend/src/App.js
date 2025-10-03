@@ -9,69 +9,41 @@ import CourtDashboard from "./components/CourtDashboard";
 function App() {
   const [user, setUser] = useState(null);
 
-  // Callback when login is successful
-  const handleLogin = (userData) => {
-    setUser(userData);
-  };
+  const handleLogin = (userData) => setUser(userData);
 
   return (
     <Router>
       <Routes>
-        {/* Default route → Login */}
+        {/* Default → Login */}
         <Route
           path="/"
           element={
-            user ? (
-              <Navigate to={`/${user.role}`} replace />
-            ) : (
-              <Login onLogin={handleLogin} />
-            )
+            user ? <Navigate to={`/${user.role}`} replace /> : <Login onLogin={handleLogin} />
           }
         />
 
-        {/* Signup page */}
-        <Route
-          path="/signup"
-          element={<SignUp />}
-        />
+        {/* Sign Up */}
+        <Route path="/signup" element={<SignUp />} />
 
-        {/* Admin dashboard route */}
+        {/* Admin */}
         <Route
           path="/admin"
-          element={
-            user?.role === "admin" ? (
-              <AdminDashboard user={user} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
+          element={user?.role === "admin" ? <AdminDashboard user={user} /> : <Navigate to="/" replace />}
         />
 
-        {/* Police dashboard route */}
+        {/* Police */}
         <Route
           path="/police"
-          element={
-            user?.role === "police" ? (
-              <PoliceDashboard user={user} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
+          element={user?.role === "police" ? <PoliceDashboard user={user} /> : <Navigate to="/" replace />}
         />
 
-        {/* Court dashboard route */}
+        {/* Court */}
         <Route
           path="/court"
-          element={
-            user?.role === "court" ? (
-              <CourtDashboard user={user} />
-            ) : (
-              <Navigate to="/" replace />
-            )
-          }
+          element={user?.role === "court" ? <CourtDashboard user={user} /> : <Navigate to="/" replace />}
         />
 
-        {/* Catch-all route → redirect to login */}
+        {/* Catch-all → Login */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
