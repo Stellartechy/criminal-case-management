@@ -8,14 +8,27 @@ function PoliceDashboard({ user }) {
   const [selectedCriminal, setSelectedCriminal] = useState(null);
   const [selectedCase, setSelectedCase] = useState(null);
   const [formData, setFormData] = useState({});
+  const [officerDetails, setOfficerDetails] = useState({});
   const [loading, setLoading] = useState(false);
 
   const API = "http://127.0.0.1:8000";
 
   useEffect(() => {
+    fetchOfficerDetails();
     fetchCriminals();
     fetchCases();
   }, []);
+
+  // Fetch officer info for My Profile
+  const fetchOfficerDetails = async () => {
+    try {
+      const res = await fetch(`${API}/officers/${user.user_id}`);
+      const data = await res.json();
+      setOfficerDetails(data);
+    } catch (err) {
+      console.error("Error fetching officer details:", err);
+    }
+  };
 
   const fetchCriminals = async () => {
     try {
@@ -76,7 +89,7 @@ function PoliceDashboard({ user }) {
       setLoading(true);
       const payload = {
         ...formData,
-        officer_id: user.user_id, // officer id from login
+        officer_id: officerDetails.officer_id,
       };
       const res = await fetch(`${API}/cases`, {
         method: "POST",
@@ -137,7 +150,8 @@ function PoliceDashboard({ user }) {
         setSelectedCase(null);
         setFormData({});
       } else {
-        alert("Failed to update case");
+        const data = await res.json();
+        alert(data.detail || "Failed to update case");
       }
     } catch (err) {
       console.error(err);
@@ -159,19 +173,6 @@ function PoliceDashboard({ user }) {
     }
   };
 
-  const deleteCase = async (fir_id) => {
-    if (!window.confirm("Are you sure you want to delete this case?")) return;
-    try {
-      const res = await fetch(`${API}/cases/${fir_id}`, { method: "DELETE" });
-      if (res.ok) {
-        alert("Case deleted");
-        fetchCases();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   return (
     <div className="dashboard">
       <div className="sidebar">
@@ -181,21 +182,26 @@ function PoliceDashboard({ user }) {
           <li onClick={() => setActiveTab("addCriminal")}>Register Criminal</li>
           <li onClick={() => setActiveTab("addCase")}>Register Case</li>
           <li onClick={() => setActiveTab("retrieveCriminal")}>Retrieve Criminal</li>
-          <li onClick={() => setActiveTab("retrieveCase")}>Retrieve Case</li>
+          <li onClick={() => setActiveTab("retrieveCase")}>Retrieve FIR</li>
           <li onClick={() => setActiveTab("deleteCriminal")}>Delete Criminal</li>
-          <li onClick={() => setActiveTab("deleteCase")}>Delete Case</li>
         </ul>
       </div>
 
       <div className="main-content">
+        {/* ------------------ My Profile ------------------ */}
         {activeTab === "profile" && (
           <div>
             <h3>My Profile</h3>
+            <p><strong>User ID:</strong> {officerDetails.user_id}</p>
+            <p><strong>Officer ID:</strong> {officerDetails.officer_id}</p>
             <p><strong>Username:</strong> {user.username}</p>
-            <p><strong>Role:</strong> {user.role}</p>
+            <p><strong>Rank:</strong> {officerDetails.rank_title}</p>
+            <p><strong>Name:</strong> {officerDetails.name}</p>
+            <p><strong>Station:</strong> {officerDetails.station}</p>
           </div>
         )}
 
+        {/* ------------------ Register Criminal ------------------ */}
         {activeTab === "addCriminal" && (
           <div>
             <h3>Register Criminal</h3>
@@ -212,12 +218,17 @@ function PoliceDashboard({ user }) {
           </div>
         )}
 
+        {/* ------------------ Register Case ------------------ */}
         {activeTab === "addCase" && (
           <div>
             <h3>Register Case</h3>
+            <label>FIR Date:</label>
             <input type="date" name="fir_date" onChange={handleCaseChange} />
+            <label>Crime Type:</label>
             <input name="crime_type" placeholder="Crime Type" onChange={handleCaseChange} />
+            <label>Crime Date:</label>
             <input type="date" name="crime_date" onChange={handleCaseChange} />
+            <label>Crime Description:</label>
             <textarea name="crime_description" placeholder="Description" onChange={handleCaseChange} />
             <label>Select Criminal(s):</label>
             <select name="criminal_ids" multiple onChange={(e) =>
@@ -234,13 +245,14 @@ function PoliceDashboard({ user }) {
           </div>
         )}
 
+        {/* ------------------ Retrieve Criminal ------------------ */}
         {activeTab === "retrieveCriminal" && (
           <div>
             <h3>Criminals</h3>
             <table>
               <thead>
                 <tr>
-                  <th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Address</th><th>Status</th><th>Actions</th>
+                  <th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Address</th><th>Status</th><th>Associated Crimes</th><th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -252,6 +264,7 @@ function PoliceDashboard({ user }) {
                     <td>{c.gender}</td>
                     <td>{c.address}</td>
                     <td>{c.status}</td>
+                    <td>{c.cases?.map(f => f.crime_type).join(", ") || "-"}</td>
                     <td>
                       <button onClick={() => { setSelectedCriminal(c); setFormData(c); }}>Update</button>
                     </td>
@@ -263,10 +276,15 @@ function PoliceDashboard({ user }) {
             {selectedCriminal && (
               <div>
                 <h4>Update Criminal</h4>
-                <input name="name" placeholder="Name" value={formData.name || ""} onChange={handleCriminalChange} />
-                <input name="age" type="number" placeholder="Age" value={formData.age || ""} onChange={handleCriminalChange} />
-                <input name="gender" placeholder="Gender" value={formData.gender || ""} onChange={handleCriminalChange} />
-                <input name="address" placeholder="Address" value={formData.address || ""} onChange={handleCriminalChange} />
+                <label>Name:</label>
+                <input name="name" value={formData.name || ""} onChange={handleCriminalChange} />
+                <label>Age:</label>
+                <input name="age" type="number" value={formData.age || ""} onChange={handleCriminalChange} />
+                <label>Gender:</label>
+                <input name="gender" value={formData.gender || ""} onChange={handleCriminalChange} />
+                <label>Address:</label>
+                <input name="address" value={formData.address || ""} onChange={handleCriminalChange} />
+                <label>Status:</label>
                 <select name="status" value={formData.status || ""} onChange={handleCriminalChange}>
                   <option value="Under Trial">Under Trial</option>
                   <option value="Released">Released</option>
@@ -278,27 +296,45 @@ function PoliceDashboard({ user }) {
           </div>
         )}
 
+        {/* ------------------ Retrieve FIR ------------------ */}
         {activeTab === "retrieveCase" && (
           <div>
-            <h3>Cases</h3>
+            <h3>FIRs</h3>
             <table>
               <thead>
                 <tr>
-                  <th>ID</th><th>Crime Type</th><th>Crime Date</th><th>Status</th><th>Verdict</th><th>Punishment</th><th>Criminals</th><th>Actions</th>
+                  <th>Officer ID</th>
+                  <th>Officer Name</th>
+                  <th>FIR ID</th>
+                  <th>FIR Date</th>
+                  <th>Case Status</th>
+                  <th>Crime Type</th>
+                  <th>Crime Date</th>
+                  <th>Crime Description</th>
+                  <th>Verdict</th>
+                  <th>Punishment Type</th>
+                  <th>Punishment Duration (yrs)</th>
+                  <th>Punishment Start Date</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {cases.map(c => (
-                  <tr key={c.fir_id}>
-                    <td>{c.fir_id}</td>
-                    <td>{c.crime_type}</td>
-                    <td>{c.crime_date}</td>
-                    <td>{c.case_status}</td>
-                    <td>{c.verdict}</td>
-                    <td>{c.punishment_type ? `${c.punishment_type} (${c.punishment_duration_years} yrs)` : "-"}</td>
-                    <td>{c.criminals.map(cr => cr.name).join(", ")}</td>
+                {cases.map(f => (
+                  <tr key={f.fir_id}>
+                    <td>{f.officer_id}</td>
+                    <td>{f.officer_name}</td>
+                    <td>{f.fir_id}</td>
+                    <td>{f.fir_date}</td>
+                    <td>{f.case_status}</td>
+                    <td>{f.crime_type}</td>
+                    <td>{f.crime_date}</td>
+                    <td>{f.crime_description}</td>
+                    <td>{f.verdict}</td>
+                    <td>{f.punishment_type}</td>
+                    <td>{f.punishment_duration_years}</td>
+                    <td>{f.punishment_start_date}</td>
                     <td>
-                      <button onClick={() => { setSelectedCase(c); setFormData(c); }}>Update</button>
+                      <button onClick={() => { setSelectedCase(f); setFormData(f); }}>Update</button>
                     </td>
                   </tr>
                 ))}
@@ -307,50 +343,45 @@ function PoliceDashboard({ user }) {
 
             {selectedCase && (
               <div>
-                <h4>Update Case</h4>
-                <input type="date" name="fir_date" value={formData.fir_date || ""} onChange={handleCaseChange} />
-                <input name="crime_type" placeholder="Crime Type" value={formData.crime_type || ""} onChange={handleCaseChange} />
-                <input type="date" name="crime_date" value={formData.crime_date || ""} onChange={handleCaseChange} />
-                <textarea name="crime_description" placeholder="Description" value={formData.crime_description || ""} onChange={handleCaseChange} />
+                <h4>Update FIR</h4>
+                <label>Case Status:</label>
                 <select name="case_status" value={formData.case_status || ""} onChange={handleCaseChange}>
                   <option value="Open">Open</option>
                   <option value="In Court">In Court</option>
                   <option value="Closed">Closed</option>
                 </select>
+                <label>Crime Type:</label>
+                <input name="crime_type" value={formData.crime_type || ""} onChange={handleCaseChange} />
+                <label>Crime Date:</label>
+                <input type="date" name="crime_date" value={formData.crime_date || ""} onChange={handleCaseChange} />
+                <label>Crime Description:</label>
+                <textarea name="crime_description" value={formData.crime_description || ""} onChange={handleCaseChange} />
+                <label>Verdict:</label>
                 <select name="verdict" value={formData.verdict || ""} onChange={handleCaseChange}>
                   <option value="">Pending</option>
                   <option value="Guilty">Guilty</option>
                   <option value="Not Guilty">Not Guilty</option>
                 </select>
-                <input name="punishment_type" placeholder="Punishment Type" value={formData.punishment_type || ""} onChange={handleCaseChange} />
-                <input type="number" name="punishment_duration_years" placeholder="Duration (yrs)" value={formData.punishment_duration_years || ""} onChange={handleCaseChange} />
+                <label>Punishment Type:</label>
+                <input name="punishment_type" value={formData.punishment_type || ""} onChange={handleCaseChange} />
+                <label>Punishment Duration (yrs):</label>
+                <input type="number" name="punishment_duration_years" value={formData.punishment_duration_years || ""} onChange={handleCaseChange} />
+                <label>Punishment Start Date:</label>
                 <input type="date" name="punishment_start_date" value={formData.punishment_start_date || ""} onChange={handleCaseChange} />
-                <button onClick={updateCase} disabled={loading}>{loading ? "Updating..." : "Update Case"}</button>
+                <button onClick={updateCase} disabled={loading}>{loading ? "Updating..." : "Update FIR"}</button>
               </div>
             )}
           </div>
         )}
 
+        {/* ------------------ Delete Criminal ------------------ */}
         {activeTab === "deleteCriminal" && (
           <div>
             <h3>Delete Criminal</h3>
             <ul>
               {criminals.map(c => (
                 <li key={c.criminal_id}>
-                  {c.name} <button onClick={() => deleteCriminal(c.criminal_id)}>Delete</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {activeTab === "deleteCase" && (
-          <div>
-            <h3>Delete Case</h3>
-            <ul>
-              {cases.map(c => (
-                <li key={c.fir_id}>
-                  {c.crime_type} ({c.crime_date}) <button onClick={() => deleteCase(c.fir_id)}>Delete</button>
+                  {c.criminal_id} - {c.name} <button onClick={() => deleteCriminal(c.criminal_id)}>Delete</button>
                 </li>
               ))}
             </ul>

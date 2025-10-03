@@ -11,7 +11,6 @@ Base.metadata.create_all(bind=engine)
 # ---------------- FastAPI ----------------
 app = FastAPI(title="Criminal Case Management")
 
-
 # ---------------- DB Dependency ----------------
 def get_db():
     db = SessionLocal()
@@ -45,6 +44,14 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     if db_user.role != user.role:
         raise HTTPException(status_code=403, detail=f"You are not a {user.role}")
     return db_user
+
+# ---------------- Officers ----------------
+@app.get("/officers/{user_id}", response_model=schemas.OfficerRead)
+def get_officer(user_id: int, db: Session = Depends(get_db)):
+    officer = crud.get_officer_by_user_id(db, user_id)
+    if not officer:
+        raise HTTPException(status_code=404, detail="Officer not found")
+    return officer
 
 # ---------------- Criminals ----------------
 @app.get("/criminals", response_model=List[schemas.CriminalRead])
@@ -85,22 +92,12 @@ def get_case(fir_id: int, db: Session = Depends(get_db)):
 
 @app.post("/cases", response_model=schemas.FIRRead)
 def create_case(case: schemas.FIRCreate, db: Session = Depends(get_db), officer_id: int = 1):
-    # officer_id can come from login in frontend
+    # officer_id comes from login in frontend
     return crud.create_case(db, case, officer_id)
 
 @app.put("/cases/{fir_id}", response_model=schemas.FIRRead)
 def update_case(fir_id: int, case: schemas.FIRUpdate, db: Session = Depends(get_db)):
     return crud.update_case(db, fir_id, case)
 
-
-
-@app.delete("/cases/{fir_id}")
-def delete_case(fir_id: int, db: Session = Depends(get_db)):
-    db_case = crud.get_case(db, fir_id)
-    if not db_case:
-        raise HTTPException(status_code=404, detail="Case not found")
-    
-    # Delete the case record
-    crud.delete_case(db, fir_id)
-    
-    return {"message": "Case deleted successfully"}
+# ---------------- NOTE ----------------
+# DELETE /cases endpoint removed as per requirements
