@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List
@@ -56,7 +56,8 @@ def get_officer(user_id: int, db: Session = Depends(get_db)):
 # ---------------- Criminals ----------------
 @app.get("/criminals", response_model=List[schemas.CriminalRead])
 def get_criminals(db: Session = Depends(get_db)):
-    return crud.get_criminals(db)
+    criminals = crud.get_criminals(db)
+    return criminals
 
 @app.get("/criminals/{criminal_id}", response_model=schemas.CriminalRead)
 def get_criminal_by_id(criminal_id: int, db: Session = Depends(get_db)):
@@ -71,14 +72,19 @@ def add_criminal(criminal: schemas.CriminalCreate, db: Session = Depends(get_db)
 
 @app.put("/criminals/{criminal_id}", response_model=schemas.CriminalRead)
 def update_criminal(criminal_id: int, criminal: schemas.CriminalUpdate, db: Session = Depends(get_db)):
-    return crud.update_criminal(db, criminal_id, criminal)
+    updated = crud.update_criminal(db, criminal_id, criminal)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Criminal not found")
+    return updated
 
 @app.delete("/criminals/{criminal_id}")
 def delete_criminal(criminal_id: int, db: Session = Depends(get_db)):
-    crud.delete_criminal(db, criminal_id)
+    success = crud.delete_criminal(db, criminal_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Criminal not found")
     return {"message": "Criminal deleted successfully"}
 
-# ---------------- Cases / FIRs ----------------
+# ---------------- FIR / Cases ----------------
 @app.get("/cases", response_model=List[schemas.FIRRead])
 def get_cases(db: Session = Depends(get_db)):
     return crud.get_cases(db)
@@ -91,30 +97,50 @@ def get_case(fir_id: int, db: Session = Depends(get_db)):
     return db_case
 
 @app.post("/cases", response_model=schemas.FIRRead)
-def create_case(case: schemas.FIRCreate, db: Session = Depends(get_db), officer_id: int = 1):
-    """
-    Create a new FIR/case. 
-    officer_id should be passed from the frontend after login.
-    """
-    # 1️⃣ Validate officer exists
-    officer = crud.get_officer_by_id(db, officer_id)
+def create_case(
+    fir: schemas.FIRCreate,
+    officer_id: int = Query(...),
+    db: Session = Depends(get_db)
+):
+    # 1️⃣ Check officer exists
+    officer = db.query(models.PoliceOfficer).filter(models.PoliceOfficer.officer_id == officer_id).first()
     if not officer:
         raise HTTPException(status_code=404, detail="Officer not found")
-    
-    # 2️⃣ Validate criminals exist
-    for crim_id in case.criminal_ids:
-        crim = crud.get_criminal(db, crim_id)
-        if not crim:
-            raise HTTPException(status_code=404, detail=f"Criminal {crim_id} not found")
-    
-    return crud.create_case(db, case, officer_id)
+
+    # 2️⃣ Create FIR
+    new_fir = models.FIR(
+        officer_id=officer_id,
+        fir_date=fir.fir_date,
+        case_status=fir.case_status or "Open",
+        crime_type=fir.crime_type,
+        crime_date=fir.crime_date,
+        crime_description=fir.crime_description,
+        verdict=fir.verdict or "Pending",
+        punishment_type=fir.punishment_type,
+        punishment_duration_years=fir.punishment_duration_years,
+        punishment_start_date=fir.punishment_start_date,
+    )
+    db.add(new_fir)
+    db.commit()
+    db.refresh(new_fir)
+
+    # 3️⃣ Link criminals safely
+    for cid in fir.criminal_ids:
+        if isinstance(cid, int):
+            criminal = db.query(models.Criminal).filter(models.Criminal.criminal_id == cid).first()
+            if criminal:
+                new_fir.criminals.append(criminal)
+    db.commit()
+    db.refresh(new_fir)
+
+    # 4️⃣ Add officer name for response
+    new_fir.officer_name = officer.name if officer else None
+    return new_fir
+
 
 @app.put("/cases/{fir_id}", response_model=schemas.FIRRead)
 def update_case(fir_id: int, case: schemas.FIRUpdate, db: Session = Depends(get_db)):
-    db_case = crud.get_case(db, fir_id)
-    if not db_case:
+    updated = crud.update_case(db, fir_id, case)
+    if not updated:
         raise HTTPException(status_code=404, detail="Case not found")
-    return crud.update_case(db, fir_id, case)
-
-# ---------------- NOTE ----------------
-# DELETE /cases endpoint removed as per requirements
+    return updated
