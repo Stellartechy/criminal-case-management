@@ -231,9 +231,7 @@ function PoliceDashboard({ user }) {
         <ul>
           <li onClick={() => setActiveTab("profile")}>My Profile</li>
           <li onClick={() => setActiveTab("addCriminal")}>Register Criminal</li>
-          <li onClick={() => selectedCriminal && setActiveTab("updateCriminal")}>Update Criminal</li>
           <li onClick={() => setActiveTab("addCase")}>Register Case</li>
-          <li onClick={() => selectedCase && setActiveTab("updateCase")}>Update Case</li>
           <li onClick={() => setActiveTab("retrieveCriminal")}>Retrieve Criminals</li>
           <li onClick={() => setActiveTab("retrieveCase")}>Retrieve FIRs</li>
         </ul>
@@ -270,23 +268,6 @@ function PoliceDashboard({ user }) {
           </div>
         )}
 
-        {/* Update Criminal */}
-        {activeTab === "updateCriminal" && selectedCriminal && (
-          <div>
-            <h3>Update Criminal</h3>
-            <input name="name" placeholder="Name" value={formData.name || ""} onChange={handleChange} />
-            <input name="age" type="number" placeholder="Age" value={formData.age || ""} onChange={handleChange} />
-            <input name="gender" placeholder="Gender" value={formData.gender || ""} onChange={handleChange} />
-            <input name="address" placeholder="Address" value={formData.address || ""} onChange={handleChange} />
-            <select name="status" value={formData.status || ""} onChange={handleChange}>
-              <option value="Under Trial">Under Trial</option>
-              <option value="Released">Released</option>
-              <option value="Convicted">Convicted</option>
-            </select>
-            <button onClick={updateCriminal} disabled={loading}>{loading ? "Updating..." : "Update Criminal"}</button>
-          </div>
-        )}
-
         {/* Register Case */}
         {activeTab === "addCase" && (
           <div>
@@ -300,35 +281,6 @@ function PoliceDashboard({ user }) {
               {criminals.map(c => <option key={c.criminal_id} value={c.criminal_id}>{c.name}</option>)}
             </select>
             <button onClick={addCase} disabled={loading}>{loading ? "Adding..." : "Add Case"}</button>
-          </div>
-        )}
-
-        {/* Update Case */}
-        {activeTab === "updateCase" && selectedCase && (
-          <div>
-            <h3>Update Case</h3>
-            <input type="date" name="fir_date" value={formData.fir_date || ""} onChange={handleChange} />
-            <input name="crime_type" placeholder="Crime Type" value={formData.crime_type || ""} onChange={handleChange} />
-            <input type="date" name="crime_date" value={formData.crime_date || ""} onChange={handleChange} />
-            <textarea name="crime_description" placeholder="Crime Description" value={formData.crime_description || ""} onChange={handleChange} />
-            <select name="case_status" value={formData.case_status || "Open"} onChange={handleChange}>
-              <option value="Open">Open</option>
-              <option value="In Court">In Court</option>
-              <option value="Closed">Closed</option>
-            </select>
-            <select name="verdict" value={formData.verdict || "Pending"} onChange={handleChange}>
-              <option value="Pending">Pending</option>
-              <option value="Guilty">Guilty</option>
-              <option value="Not Guilty">Not Guilty</option>
-            </select>
-            <input name="punishment_type" placeholder="Punishment Type" value={formData.punishment_type || ""} onChange={handleChange} />
-            <input type="number" name="punishment_duration_years" placeholder="Duration (yrs)" value={formData.punishment_duration_years || ""} onChange={handleChange} />
-            <input type="date" name="punishment_start_date" value={formData.punishment_start_date || ""} onChange={handleChange} />
-            <label>Select Criminal(s):</label>
-            <select name="criminal_ids" multiple value={formData.criminal_ids || []} onChange={handleChange}>
-              {criminals.map(c => <option key={c.criminal_id} value={c.criminal_id}>{c.name}</option>)}
-            </select>
-            <button onClick={updateCase} disabled={loading}>{loading ? "Updating..." : "Update Case"}</button>
           </div>
         )}
 
@@ -369,6 +321,51 @@ function PoliceDashboard({ user }) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Hidden edit tabs (accessed only from retrieve lists) */}
+        {activeTab === "updateCriminal" && selectedCriminal && (
+          <div>
+            <h3>Update Criminal</h3>
+            <input name="name" placeholder="Name" value={formData.name || ""} onChange={handleChange} />
+            <input name="age" type="number" placeholder="Age" value={formData.age || ""} onChange={handleChange} />
+            <input name="gender" placeholder="Gender" value={formData.gender || ""} onChange={handleChange} />
+            <input name="address" placeholder="Address" value={formData.address || ""} onChange={handleChange} />
+            <select name="status" value={formData.status || ""} onChange={handleChange}>
+              <option value="Under Trial">Under Trial</option>
+              <option value="Released">Released</option>
+              <option value="Convicted">Convicted</option>
+            </select>
+            <button onClick={updateCriminal} disabled={loading}>{loading ? "Updating..." : "Update Criminal"}</button>
+          </div>
+        )}
+
+        {activeTab === "updateCase" && selectedCase && (
+          <div>
+            <h3>Update Case</h3>
+            <input type="date" name="fir_date" value={formData.fir_date || ""} onChange={handleChange} />
+            <input name="crime_type" placeholder="Crime Type" value={formData.crime_type || ""} onChange={handleChange} />
+            <input type="date" name="crime_date" value={formData.crime_date || ""} onChange={handleChange} />
+            <textarea name="crime_description" placeholder="Crime Description" value={formData.crime_description || ""} onChange={handleChange} />
+            <select name="case_status" value={formData.case_status || "Open"} onChange={handleChange}>
+              <option value="Open">Open</option>
+              <option value="In Court">In Court</option>
+              <option value="Closed">Closed</option>
+            </select>
+            <select name="verdict" value={formData.verdict || "Pending"} onChange={handleChange}>
+              <option value="Pending">Pending</option>
+              <option value="Guilty">Guilty</option>
+              <option value="Not Guilty">Not Guilty</option>
+            </select>
+            <input name="punishment_type" placeholder="Punishment Type" value={formData.punishment_type || ""} onChange={handleChange} />
+            <input type="number" name="punishment_duration_years" placeholder="Duration (yrs)" value={formData.punishment_duration_years || ""} onChange={handleChange} />
+            <input type="date" name="punishment_start_date" value={formData.punishment_start_date || ""} onChange={handleChange} />
+            <label>Select Criminal(s):</label>
+            <select name="criminal_ids" multiple value={formData.criminal_ids || []} onChange={handleChange}>
+              {criminals.map(c => <option key={c.criminal_id} value={c.criminal_id}>{c.name}</option>)}
+            </select>
+            <button onClick={updateCase} disabled={loading}>{loading ? "Updating..." : "Update Case"}</button>
           </div>
         )}
       </div>

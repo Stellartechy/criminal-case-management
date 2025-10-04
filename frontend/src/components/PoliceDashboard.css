@@ -1,137 +1,226 @@
-/* PoliceDashboard.css */
+/* ==========================
+   POLICE DASHBOARD – DARK PREMIUM UI (BRIGHT TEXT)
+   ========================== */
 
-/* ---------------- BODY & CONTAINER ---------------- */
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f5f7fa;
   margin: 0;
-  padding: 0;
+  font-family: "Poppins", sans-serif;
+  background: #0f172a; /* Dark navy background */
+  color: #f8fafc; /* Bright text */
 }
 
+/* ===== Dashboard Layout ===== */
 .dashboard {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* ---------------- SIDEBAR ---------------- */
+/* ===== Sidebar ===== */
 .sidebar {
-  width: 220px;
-  background-color: #2c3e50;
-  color: #ecf0f1;
-  padding: 20px;
-  box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+  width: 260px;
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  color: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 30px 22px;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0 15px 15px 0;
 }
 
-.sidebar h2 {
-  font-size: 1.5rem;
-  margin-bottom: 20px;
+.logo {
+  font-size: 1.7rem;
+  font-weight: 700;
   text-align: center;
+  margin-bottom: 30px;
+  color: #facc15; /* Vibrant yellow logo */
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  text-shadow: 0 0 10px #facc15;
 }
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar li {
-  padding: 12px 10px;
-  margin-bottom: 5px;
+.sidebar ul li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
   cursor: pointer;
-  border-radius: 5px;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  color: #f8fafc;
 }
 
-.sidebar li:hover {
-  background-color: #34495e;
+.sidebar ul li:hover {
+  background: rgba(250, 204, 21, 0.2);
+  transform: translateX(6px);
 }
 
-/* ---------------- MAIN CONTENT ---------------- */
+.sidebar ul li.active {
+  background: #facc15;
+  color: #0f172a;
+  font-weight: 600;
+  box-shadow: 0 3px 12px rgba(250, 204, 21, 0.5);
+}
+
+/* ===== Main Content ===== */
 .main-content {
   flex: 1;
-  padding: 30px;
+  background: #1e293b;
+  padding: 35px 45px;
   overflow-y: auto;
+  backdrop-filter: blur(6px);
+  scrollbar-width: thin;
+  scrollbar-color: #facc15 transparent;
+  border-radius: 15px 0 0 15px;
+  color: #f8fafc; /* bright text */
 }
 
-.main-content h3 {
-  margin-top: 0;
-  color: #2c3e50;
+.main-content::-webkit-scrollbar {
+  width: 8px;
 }
 
-.main-content h4 {
-  margin-bottom: 10px;
-  color: #34495e;
+.main-content::-webkit-scrollbar-thumb {
+  background: #facc15;
+  border-radius: 10px;
 }
 
-/* ---------------- FORMS ---------------- */
-.main-content input,
-.main-content select,
-.main-content textarea {
-  width: 100%;
-  padding: 8px 10px;
-  margin: 6px 0 12px 0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  box-sizing: border-box;
+/* ===== Header ===== */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 14px;
+  margin-bottom: 35px;
+}
+
+header h2 {
+  color: #facc15; /* bright heading */
+  font-weight: 700;
+  font-size: 1.6rem;
+  letter-spacing: 0.5px;
+}
+
+header .officer-info {
   font-size: 0.95rem;
+  color: #f1f5f9;
 }
 
-.main-content textarea {
-  resize: vertical;
-  min-height: 80px;
+/* ===== Card (Container Sections) ===== */
+.card {
+  background: #0f172a;
+  padding: 28px 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+  margin-bottom: 28px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #334155;
+  color: #f8fafc; /* bright text inside card */
 }
 
-.main-content button {
-  background-color: #2980b9;
-  color: #fff;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.2s;
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(250, 204, 21, 0.4);
 }
 
-.main-content button:hover {
-  background-color: #1f6391;
-}
-
-.main-content button:disabled {
-  background-color: #7f8c8d;
-  cursor: not-allowed;
-}
-
-/* ---------------- TABLES ---------------- */
-table {
+/* ===== Forms ===== */
+input,
+select,
+textarea {
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 20px;
-  background: #fff;
-  border-radius: 5px;
-  overflow: hidden;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  padding: 12px 16px;
+  margin-top: 8px;
+  margin-bottom: 15px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+  font-size: 0.95rem;
+  background: #1e293b;
+  color: #f8fafc; /* bright input text */
+  transition: all 0.25s ease;
 }
 
-th, td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
+input::placeholder,
+textarea::placeholder {
+  color: #94a3b8; /* lighter placeholder */
 }
 
-th {
-  background-color: #2980b9;
-  color: white;
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #facc15;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.4);
+  background: #111827;
+  color: #f8fafc;
 }
 
-tr:hover {
-  background-color: #f1f1f1;
+/* ===== Buttons ===== */
+button {
+  background-color: #facc15;
+  color: #0f172a;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-top: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(250, 204, 21, 0.4);
 }
 
-/* ---------------- MULTI-SELECT ---------------- */
-select[multiple] {
-  height: 100px;
+button:hover {
+  background-color: #eab308;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(234, 179, 8, 0.5);
 }
 
-/* ---------------- MOBILE RESPONSIVE ---------------- */
+/* ===== List Buttons ===== */
+ul li button {
+  margin-left: 12px;
+  background: #22d3ee;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  color: #0f172a;
+}
+
+ul li button:last-of-type {
+  background: #ef4444;
+  color: #fff;
+}
+
+ul li button:hover {
+  opacity: 0.95;
+  transform: scale(1.08);
+}
+
+/* ===== Lists ===== */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul li {
+  background: #111827;
+  border-radius: 14px;
+  padding: 18px 24px;
+  margin-bottom: 18px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.6);
+  transition: all 0.35s ease;
+  border-left: 6px solid #facc15;
+  color: #f8fafc; /* bright text */
+}
+
+ul li:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(250, 204, 21, 0.4);
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 900px) {
   .dashboard {
     flex-direction: column;
@@ -139,21 +228,20 @@ select[multiple] {
 
   .sidebar {
     width: 100%;
-    display: flex;
+    flex-direction: row;
     overflow-x: auto;
   }
 
   .sidebar ul {
     display: flex;
-  }
-
-  .sidebar li {
-    flex: 1;
-    text-align: center;
-    margin: 0 5px;
+    gap: 12px;
   }
 
   .main-content {
-    padding: 20px;
+    padding: 25px;
+  }
+
+  header h2 {
+    font-size: 1.3rem;
   }
 }
