@@ -24,9 +24,43 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"],   # allows OPTIONS for preflight requests
     allow_headers=["*"],
 )
+
+# ---------- Operator Management ----------
+@app.get("/users", response_model=List[schemas.UserRead])
+def list_users(role: str, db: Session = Depends(get_db)):
+    return crud.get_users_by_role(db=db, role=role)
+
+@app.delete("/users/{user_id}", response_model=schemas.UserRead)
+def remove_user(user_id: int, db: Session = Depends(get_db)):
+    return crud.delete_user(db=db, user_id=user_id)
+
+@app.put("/users/{user_id}", response_model=schemas.UserRead)
+def update_user(user_id: int, user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.user_id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update fields (including password)
+    db_user.username = user.username
+    db_user.password = user.password
+    db_user.role = user.role
+    db_user.name = user.name
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@app.post("/users", response_model=schemas.UserRead)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    return crud.create_user(db=db, user=user)
+
+@app.get("/users/{user_id}", response_model=schemas.UserRead)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_user(db=db, user_id=user_id)
+
 
 # ---------------- Signup/Login ----------------
 @app.post("/signup", response_model=schemas.UserRead)
@@ -45,6 +79,7 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail=f"You are not a {user.role}")
     return db_user
 
+
 # ---------------- Officers ----------------
 @app.get("/officers/{user_id}", response_model=schemas.OfficerRead)
 def get_officer(user_id: int, db: Session = Depends(get_db)):
@@ -52,6 +87,7 @@ def get_officer(user_id: int, db: Session = Depends(get_db)):
     if not officer:
         raise HTTPException(status_code=404, detail="Officer not found")
     return officer
+
 
 # ---------------- Criminals ----------------
 @app.get("/criminals", response_model=List[schemas.CriminalRead])
@@ -83,6 +119,7 @@ def delete_criminal(criminal_id: int, db: Session = Depends(get_db)):
     if not success:
         raise HTTPException(status_code=404, detail="Criminal not found")
     return {"message": "Criminal deleted successfully"}
+
 
 # ---------------- FIR / Cases ----------------
 @app.get("/cases", response_model=List[schemas.FIRRead])

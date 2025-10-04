@@ -7,6 +7,8 @@ export default function AuthPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("admin");
+  const [name, setName] = useState("");
+
 
   const handleLogin = async () => {
     try {
@@ -32,24 +34,25 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignUp = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:8000/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, role }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert("Sign up successful! Now login.");
-        setIsLogin(true);
-      } else {
-        alert("Sign up failed.");
-      }
-    } catch (err) {
-      alert("Error connecting to backend.");
+ const handleSignUp = async () => {
+  try {
+    const res = await fetch("http://127.0.0.1:8000/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, role, name }), // ✅ added name
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Sign up successful! Now login.");
+      setIsLogin(true);
+    } else {
+      alert("Sign up failed.");
     }
-  };
+  } catch (err) {
+    alert("Error connecting to backend.");
+  }
+};
+
 
   return (
     <div className="flex items-center justify-center h-screen bg-gradient-to-r from-blue-400 to-purple-600">
@@ -57,6 +60,14 @@ export default function AuthPage() {
         <h2 className="text-2xl font-bold mb-6 text-center">
           {isLogin ? "Login" : "Sign Up"}
         </h2>
+        <input
+          type="text"
+          placeholder="Full Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full p-3 mb-4 border rounded"
+        />
+
 
         <input
           type="text"

@@ -9,6 +9,7 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
     role = Column(Enum("admin", "police", name="user_roles", native_enum=False), nullable=False)
+    name = Column(String(100), nullable=False)
     officer = relationship("PoliceOfficer", back_populates="user", uselist=False)
 
 # ---------------- Police Officers ----------------

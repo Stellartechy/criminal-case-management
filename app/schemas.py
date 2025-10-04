@@ -60,6 +60,7 @@ class FIRRead(FIRBase):
 class UserBase(BaseModel):
     username: str
     role: str
+    name: str
 
 class UserCreate(UserBase):
     password: str
